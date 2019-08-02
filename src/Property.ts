@@ -1,8 +1,4 @@
-import Reflection from './Reflection';
-
-export interface Constructor {
-    new (...args: any[]): Object;
-}
+import Reflection, { Constructor } from './Reflection';
 
 export default class Property {
     
@@ -12,22 +8,22 @@ export default class Property {
     
     public static Shallow(constructor: Constructor): Map<string, Property> {
         if (!Property.m_shallow.has(constructor)) {
-            let properties = new Map(Property.Deep(constructor));
-            
-            const prototype = constructor.prototype.__proto__ === undefined
-                ? undefined
-                : constructor.prototype.__proto__.constructor;
-            if (prototype === undefined || prototype === Object) {
-                return properties;
-            }
-            
-            properties = Array.from(Property.Deep(prototype).keys())
+            const properties = Object.getOwnPropertyNames(constructor.prototype)
                 .reduce(
                     (state: Map<string, Property>, propertyName: string): Map<string, Property> => {
-                        state.delete(propertyName);
-                        return state;
+                        if (propertyName === 'constructor') {
+                            return state;
+                        }
+                        
+                        const propertyDescriptor = Object.getOwnPropertyDescriptor(constructor.prototype, propertyName) as PropertyDescriptor;
+                        if (propertyDescriptor.value !== undefined && propertyDescriptor.get === undefined && propertyDescriptor.set === undefined) {
+                            return state;
+                        }
+                        
+                        const property = new Property(constructor, propertyName, propertyDescriptor);
+                        return state.set(propertyName, property);
                     },
-                    properties
+                    new Map()
                 );
             
             Property.m_shallow.set(constructor, properties);
@@ -38,50 +34,25 @@ export default class Property {
     
     public static Deep(constructor: Constructor): Map<string, Property> {
         if (!Property.m_deep.has(constructor)) {
-            let instance: Object;
-            try {
-                instance = new constructor();
-            } catch {
-                instance = Object.create(constructor.prototype);
-            }
-            
-            let properties = Object.getOwnPropertyNames(instance)
+            const prototypes = Reflection.Prototypes(constructor);
+        
+            const properties = Array.from(prototypes)
                 .reduce(
-                    (state: Map<string, Property>, propertyName: string): Map<string, Property> => {
-                        const descriptor = Object.getOwnPropertyDescriptor(instance, propertyName) as PropertyDescriptor;
-                        const property = new Property(propertyName, descriptor);
-                        return state.set(propertyName, property);
+                    (state: Map<string, Property>, constructor: Constructor): Map<string, Property> => {
+                        const properties = Property.Shallow(constructor);
+                        properties.forEach((property: Property): Map<string, Property> => state.set(property.name, property));
+                        return state;
                     },
                     new Map()
                 );
-            
-            // const prototypes = Reflection.Prototypes(constructor);
-            
-            // properties = Array.from(prototypes)
-            //     .reduce(
-            //         (state: Map<string, Property>, constructor: Constructor): Map<string, Property> => {
-            //             Object.getOwnPropertyNames(constructor.prototype)
-            //                 .forEach(
-            //                     (propertyName: string): void => {
-            //                         const descriptor = Object.getOwnPropertyDescriptor(constructor.prototype, propertyName) as PropertyDescriptor;
-            //                         if (descriptor.get === undefined || descriptor.set === undefined) {
-            //                             return;
-            //                         }
-                                    
-            //                         const property = new Property(propertyName, descriptor);
-            //                         state.set(propertyName, property);
-            //                     }
-            //                 );
-            //             return state;
-            //         },
-            //         properties
-            //     );
-            
+                
             Property.m_deep.set(constructor, properties);
         }
         
         return Property.m_deep.get(constructor) as Map<string, Property>;
     }
+    
+    private m_constructor: Constructor;
 
     private m_name: string;
     
@@ -109,25 +80,26 @@ export default class Property {
             : this.m_propertyDescriptor.writable;
     }
     
+    private constructor(constructor: Constructor, name: string, propertyDescriptor: PropertyDescriptor) {
+        this.m_constructor = constructor;
+        this.m_name = name;
+        this.m_propertyDescriptor = propertyDescriptor;
+    }
+    
     public get(target: Object): any {
         if (this.m_propertyDescriptor.get === undefined) {
-            return (target as any)[this.m_name];
-        } else {
-            return this.m_propertyDescriptor.get.call(target);
+            return undefined;
         }
+        
+        return this.m_propertyDescriptor.get.call(target);
     }
     
     public set(target: Object, value: any): void {
         if (this.m_propertyDescriptor.set === undefined) {
-            (target as any)[this.m_name] = value;
-        } else {
-            this.m_propertyDescriptor.set.call(target, value);
+            return;
         }
-    }
-    
-    private constructor(name: string, propertyDescriptor: PropertyDescriptor) {
-        this.m_name = name;
-        this.m_propertyDescriptor = propertyDescriptor;
+        
+        this.m_propertyDescriptor.set.call(target, value);
     }
 
 }

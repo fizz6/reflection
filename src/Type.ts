@@ -1,9 +1,7 @@
+import { Constructor } from './Reflection';
+import Field from './Field';
 import Method from './Method';
 import Property from './Property';
-
-export interface Constructor {
-    new (...args: any[]): Object;
-}
 
 export default class Type {
     
@@ -38,6 +36,16 @@ export default class Type {
         }
         
         return this.m_properties;
+    }
+    
+    private m_fields?: Map<string, Field>;
+    
+    public get fields(): Map<string, Field> {
+        if (this.m_fields === undefined) {
+            this.m_fields = Field.Deep(this.m_constructor);
+        }
+        
+        return this.m_fields;
     }
     
     private constructor(constructor: Constructor) {

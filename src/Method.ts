@@ -1,8 +1,4 @@
-import Reflection from './Reflection';
-
-export interface Constructor {
-    new (...args: any[]): Object;
-}
+import Reflection, { Constructor } from './Reflection';
 
 export default class Method {
     
@@ -19,29 +15,12 @@ export default class Method {
                             return state;
                         }
                         
-                        const descriptor = Object.getOwnPropertyDescriptor(constructor.prototype, propertyName) as PropertyDescriptor;
-                        
-                        if (descriptor.get !== undefined || descriptor.set !== undefined) {
-                            if (descriptor.get !== undefined) {
-                                const getter = Object.getOwnPropertyDescriptor(constructor.prototype, propertyName) as PropertyDescriptor;
-                                getter.value = descriptor.get;
-                                const getterName = `get_${propertyName}`;
-                                const method = new Method(getterName, getter);
-                                state.set(getterName, method);
-                            }
-                            
-                            if (descriptor.set !== undefined) {
-                                const setter = Object.getOwnPropertyDescriptor(constructor.prototype, propertyName) as PropertyDescriptor;
-                                setter.value = descriptor.set;
-                                const setterName = `set_${propertyName}`;
-                                const method = new Method(setterName, setter);
-                                state.set(setterName, method);
-                            }
-                            
+                        const propertyDescriptor = Object.getOwnPropertyDescriptor(constructor.prototype, propertyName) as PropertyDescriptor;
+                        if (propertyDescriptor.value === undefined || propertyDescriptor.get !== undefined || propertyDescriptor.set !== undefined) {
                             return state;
                         }
                         
-                        const method = new Method(propertyName, descriptor);
+                        const method = new Method(constructor, propertyName, propertyDescriptor);
                         return state.set(propertyName, method);
                     },
                     new Map()
@@ -73,6 +52,8 @@ export default class Method {
         return Method.m_deep.get(constructor) as Map<string, Method>;
     }
     
+    private m_constructor: Constructor;
+    
     private m_name: string;
     
     public get name(): string {
@@ -99,7 +80,8 @@ export default class Method {
             : this.m_propertyDescriptor.writable;
     }
     
-    private constructor(name: string, propertyDescriptor: PropertyDescriptor) {
+    private constructor(constructor: Constructor, name: string, propertyDescriptor: PropertyDescriptor) {
+        this.m_constructor = constructor;
         this.m_name = name;
         this.m_propertyDescriptor = propertyDescriptor;
     }
