@@ -1,4 +1,5 @@
 import Reflection, { Constructor } from './Reflection';
+import Type from './Type';
 
 export default class Property {
     
@@ -53,6 +54,10 @@ export default class Property {
     }
     
     private m_constructor: Constructor;
+    
+    public get type(): Type {
+        return Type.Of(this.m_constructor);
+    }
 
     private m_name: string;
     
@@ -88,7 +93,7 @@ export default class Property {
     
     public get(target: Object): any {
         if (this.m_propertyDescriptor.get === undefined) {
-            return undefined;
+            throw new Error(this.m_constructor.name);
         }
         
         return this.m_propertyDescriptor.get.call(target);
@@ -96,7 +101,7 @@ export default class Property {
     
     public set(target: Object, value: any): void {
         if (this.m_propertyDescriptor.set === undefined) {
-            return;
+            throw new Error(this.m_constructor.name);
         }
         
         this.m_propertyDescriptor.set.call(target, value);

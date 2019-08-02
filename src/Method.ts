@@ -1,4 +1,5 @@
 import Reflection, { Constructor } from './Reflection';
+import Type from './Type';
 
 export default class Method {
     
@@ -53,6 +54,10 @@ export default class Method {
     }
     
     private m_constructor: Constructor;
+    
+    public get type(): Type {
+        return Type.Of(this.m_constructor);
+    }
     
     private m_name: string;
     

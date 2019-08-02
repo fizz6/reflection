@@ -1,4 +1,5 @@
 import Reflection, { Constructor } from './Reflection';
+import Type from './Type';
 
 export interface Constructor {
     new (...args: any[]): Object;
@@ -10,31 +11,29 @@ export default class Field {
     
     private static m_deep: Map<Constructor, Map<string, Field>> = new Map();
     
-    // public static Shallow(constructor: Constructor): Map<string, Field> {
-    //     if (!Field.m_shallow.has(constructor)) {
-    //         const fields = Object.getOwnPropertyNames(constructor.prototype)
-    //             .reduce(
-    //                 (state: Map<string, Field>, propertyName: string): Map<string, Field> => {
-    //                     if (propertyName === 'constructor') {
-    //                         return state;
-    //                     }
-                        
-    //                     const descriptor = Object.getOwnPropertyDescriptor(constructor.prototype, propertyName) as PropertyDescriptor;
-    //                     if (descriptor.value === undefined || descriptor.get !== undefined || descriptor.set !== undefined) {
-    //                         return state;
-    //                     }
-                        
-    //                     const field = new Field(constructor, propertyName, descriptor);
-    //                     return state.set(propertyName, field);
-    //                 },
-    //                 new Map()
-    //             );
+    public static Shallow(constructor: Constructor): Map<string, Field> {
+        if (!Field.m_shallow.has(constructor)) {
+            let fields = Field.Deep(constructor);
+            const prototype = constructor.prototype.__proto__ === undefined
+                ? undefined
+                : constructor.prototype.__proto__.constructor;
+                
+            if (prototype !== undefined) {
+                fields = Array.from(Field.Deep(prototype).keys())
+                    .reduce(
+                        (state: Map<string, Field>, propertyName: string): Map<string, Field> => {
+                            state.delete(propertyName);
+                            return state;
+                        },
+                        new Map(fields)
+                    );
+            }
             
-    //         Field.m_shallow.set(constructor, fields);
-    //     }
+            Field.m_shallow.set(constructor, fields);
+        }
         
-    //     return Field.m_shallow.get(constructor) as Map<string, Field>;
-    // }
+        return Field.m_shallow.get(constructor) as Map<string, Field>;
+    }
     
     public static Deep(constructor: Constructor): Map<string, Field> {
         if (!Field.m_deep.has(constructor)) {
@@ -62,6 +61,10 @@ export default class Field {
     }
     
     private m_constructor: Constructor;
+    
+    public get type(): Type {
+        return Type.Of(this.m_constructor);
+    }
     
     private m_name: string;
     
