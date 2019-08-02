@@ -11,31 +11,30 @@ export default class Field {
     
     private static m_deep: Map<Constructor, Map<string, Field>> = new Map();
     
-    public static Shallow(constructor: Constructor): Map<string, Field> {
+    public static shallow(constructor: Constructor): Map<string, Field> {
         if (!Field.m_shallow.has(constructor)) {
-            let fields = Field.Deep(constructor);
             const prototype = constructor.prototype.__proto__ === undefined
                 ? undefined
                 : constructor.prototype.__proto__.constructor;
                 
-            if (prototype !== undefined) {
-                fields = Array.from(Field.Deep(prototype).keys())
+            const fields = prototype === undefined
+                ? Field.deep(constructor)
+                : Array.from(Field.deep(prototype).keys())
                     .reduce(
                         (state: Map<string, Field>, propertyName: string): Map<string, Field> => {
                             state.delete(propertyName);
                             return state;
                         },
-                        new Map(fields)
+                        new Map(Field.deep(constructor))
                     );
-            }
-            
+                    
             Field.m_shallow.set(constructor, fields);
         }
         
         return Field.m_shallow.get(constructor) as Map<string, Field>;
     }
     
-    public static Deep(constructor: Constructor): Map<string, Field> {
+    public static deep(constructor: Constructor): Map<string, Field> {
         if (!Field.m_deep.has(constructor)) {
             let instance: Object;
             try {
@@ -63,7 +62,7 @@ export default class Field {
     private m_constructor: Constructor;
     
     public get type(): Type {
-        return Type.Of(this.m_constructor);
+        return Type.of(this.m_constructor);
     }
     
     private m_name: string;

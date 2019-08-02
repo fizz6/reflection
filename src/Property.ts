@@ -7,7 +7,7 @@ export default class Property {
     
     private static m_deep: Map<Constructor, Map<string, Property>> = new Map();
     
-    public static Shallow(constructor: Constructor): Map<string, Property> {
+    public static shallow(constructor: Constructor): Map<string, Property> {
         if (!Property.m_shallow.has(constructor)) {
             const properties = Object.getOwnPropertyNames(constructor.prototype)
                 .reduce(
@@ -33,14 +33,14 @@ export default class Property {
         return Property.m_shallow.get(constructor) as Map<string, Property>;
     }
     
-    public static Deep(constructor: Constructor): Map<string, Property> {
+    public static deep(constructor: Constructor): Map<string, Property> {
         if (!Property.m_deep.has(constructor)) {
             const prototypes = Reflection.Prototypes(constructor);
         
             const properties = Array.from(prototypes)
                 .reduce(
                     (state: Map<string, Property>, constructor: Constructor): Map<string, Property> => {
-                        const properties = Property.Shallow(constructor);
+                        const properties = Property.shallow(constructor);
                         properties.forEach((property: Property): Map<string, Property> => state.set(property.name, property));
                         return state;
                     },
@@ -56,7 +56,7 @@ export default class Property {
     private m_constructor: Constructor;
     
     public get type(): Type {
-        return Type.Of(this.m_constructor);
+        return Type.of(this.m_constructor);
     }
 
     private m_name: string;
