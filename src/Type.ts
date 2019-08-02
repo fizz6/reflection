@@ -1,5 +1,4 @@
 import { Constructor } from './Reflection';
-import Field from './Field';
 import Method from './Method';
 import Property from './Property';
 
@@ -7,7 +6,7 @@ export default class Type {
     
     private static m_cache: Map<Constructor, Type> = new Map();
     
-    public static Of(constructor: Constructor): Type {
+    public static of(constructor: Constructor): Type {
         if (!Type.m_cache.has(constructor)) {
             const type = new Type(constructor);
             Type.m_cache.set(constructor, type);
@@ -22,7 +21,7 @@ export default class Type {
     
     public get methods(): Map<string, Method> {
         if (this.m_methods === undefined) {
-            this.m_methods = Method.Deep(this.m_constructor);
+            this.m_methods = Method.deep(this.m_constructor);
         }
         
         return this.m_methods;
@@ -32,20 +31,10 @@ export default class Type {
     
     public get properties(): Map<string, Property> {
         if (this.m_properties === undefined) {
-            this.m_properties = Property.Deep(this.m_constructor);
+            this.m_properties = Property.deep(this.m_constructor);
         }
         
         return this.m_properties;
-    }
-    
-    private m_fields?: Map<string, Field>;
-    
-    public get fields(): Map<string, Field> {
-        if (this.m_fields === undefined) {
-            this.m_fields = Field.Deep(this.m_constructor);
-        }
-        
-        return this.m_fields;
     }
     
     private constructor(constructor: Constructor) {

@@ -1,19 +1,49 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+const Reflection_1 = require("./Reflection");
+const Type_1 = require("./Type");
 class Method {
-    constructor(propertyDescriptor) {
+    constructor(constructor, name, propertyDescriptor) {
+        this.m_constructor = constructor;
+        this.m_name = name;
         this.m_propertyDescriptor = propertyDescriptor;
     }
-    static Of(constructor) {
-        if (!Method.m_cache.has(constructor)) {
+    static shallow(constructor) {
+        if (!Method.m_shallow.has(constructor)) {
             const methods = Object.getOwnPropertyNames(constructor.prototype)
-                .map((propertyName) => {
-                const descriptor = Object.getOwnPropertyDescriptor(constructor.prototype, propertyName);
-                return new Method(descriptor);
-            });
-            Method.m_cache.set(constructor, new Set(methods));
+                .reduce((state, propertyName) => {
+                if (propertyName === 'constructor') {
+                    return state;
+                }
+                const propertyDescriptor = Object.getOwnPropertyDescriptor(constructor.prototype, propertyName);
+                if (propertyDescriptor.value === undefined || propertyDescriptor.get !== undefined || propertyDescriptor.set !== undefined) {
+                    return state;
+                }
+                const method = new Method(constructor, propertyName, propertyDescriptor);
+                return state.set(propertyName, method);
+            }, new Map());
+            Method.m_shallow.set(constructor, methods);
         }
-        return Method.m_cache.get(constructor);
+        return Method.m_shallow.get(constructor);
+    }
+    static deep(constructor) {
+        if (!Method.m_deep.has(constructor)) {
+            const prototypes = Reflection_1.default.Prototypes(constructor);
+            const methods = Array.from(prototypes)
+                .reduce((state, constructor) => {
+                const methods = Method.shallow(constructor);
+                methods.forEach((method) => state.set(method.name, method));
+                return state;
+            }, new Map());
+            Method.m_deep.set(constructor, methods);
+        }
+        return Method.m_deep.get(constructor);
+    }
+    get type() {
+        return Type_1.default.of(this.m_constructor);
+    }
+    get name() {
+        return this.m_name;
     }
     get configurable() {
         return this.m_propertyDescriptor.configurable === undefined
@@ -32,10 +62,11 @@ class Method {
     }
     invoke(target, ...args) {
         if (!(this.m_propertyDescriptor.value instanceof Function)) {
-            throw new Error(`'${this.m_propertyDescriptor.value}' cannot be invoked`);
+            throw new Error();
         }
         return this.m_propertyDescriptor.value.call(target, ...args);
     }
 }
-Method.m_cache = new Map();
+Method.m_shallow = new Map();
+Method.m_deep = new Map();
 exports.default = Method;
