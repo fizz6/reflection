@@ -7,7 +7,7 @@ export default class Method {
     
     private static m_deep: Map<Constructor, Map<string, Method>> = new Map();
     
-    public static shallow(constructor: Constructor): Map<string, Method> {
+    public static Shallow(constructor: Constructor): Map<string, Method> {
         if (!Method.m_shallow.has(constructor)) {
             const methods = Object.getOwnPropertyNames(constructor.prototype)
                 .reduce(
@@ -33,14 +33,14 @@ export default class Method {
         return Method.m_shallow.get(constructor) as Map<string, Method>;
     }
     
-    public static deep(constructor: Constructor): Map<string, Method> {
+    public static Deep(constructor: Constructor): Map<string, Method> {
         if (!Method.m_deep.has(constructor)) {
             const prototypes = Reflection.Prototypes(constructor);
         
             const methods = Array.from(prototypes)
                 .reduce(
                     (state: Map<string, Method>, constructor: Constructor): Map<string, Method> => {
-                        const methods = Method.shallow(constructor);
+                        const methods = Method.Shallow(constructor);
                         methods.forEach((method: Method): Map<string, Method> => state.set(method.name, method));
                         return state;
                     },
@@ -56,7 +56,7 @@ export default class Method {
     private m_constructor: Constructor;
     
     public get type(): Type {
-        return Type.of(this.m_constructor);
+        return Type.Of(this.m_constructor);
     }
     
     private m_name: string;
@@ -93,7 +93,7 @@ export default class Method {
     
     public invoke(target: Object, ...args: any[]): any {
         if (!(this.m_propertyDescriptor.value instanceof Function)) {
-            throw new Error();
+            throw new Error(`'${this.m_propertyDescriptor.value}' cannot be invoked`)
         }
         
         return (this.m_propertyDescriptor.value as Function).call(target, ...args);
