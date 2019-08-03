@@ -11,7 +11,13 @@ export default class Field {
     
     private static m_deep: Map<Constructor, Map<string, Field>> = new Map();
     
-    public static shallow(constructor: Constructor): Map<string, Field> {
+    public static of(constructor: Constructor, isDeep: boolean = true): Map<string, Field> {
+        return isDeep
+            ? Field.deep(constructor)
+            : Field.shallow(constructor);
+    }
+    
+    private static shallow(constructor: Constructor): Map<string, Field> {
         if (!Field.m_shallow.has(constructor)) {
             const prototype = constructor.prototype.__proto__ === undefined
                 ? undefined
@@ -34,13 +40,13 @@ export default class Field {
         return Field.m_shallow.get(constructor) as Map<string, Field>;
     }
     
-    public static deep(constructor: Constructor): Map<string, Field> {
+    private static deep(constructor: Constructor): Map<string, Field> {
         if (!Field.m_deep.has(constructor)) {
             let instance: Object;
             try {
                 instance = new constructor();
-            } catch {
-                throw new Error(constructor.name);
+            } catch (error) {
+                throw new Error(error);
             }
         
             const fields = Object.getOwnPropertyNames(instance)

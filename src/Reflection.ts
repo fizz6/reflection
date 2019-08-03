@@ -4,7 +4,7 @@ export interface Constructor {
 
 export default class Reflection {
     
-    public static Prototypes(constructor: Constructor, out: Set<Constructor> = new Set()): Set<Constructor> {
+    public static prototypes(constructor: Constructor, out: Set<Constructor> = new Set()): Set<Constructor> {
         out.add(constructor);
             
         constructor = constructor.prototype.__proto__ === undefined
@@ -14,7 +14,7 @@ export default class Reflection {
             return out;
         }
         
-        return Reflection.Prototypes(constructor, out);
+        return Reflection.prototypes(constructor, out);
     }
     
 }

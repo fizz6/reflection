@@ -7,7 +7,13 @@ export default class Method {
     
     private static m_deep: Map<Constructor, Map<string, Method>> = new Map();
     
-    public static shallow(constructor: Constructor): Map<string, Method> {
+    public static of(constructor: Constructor, isDeep: boolean = true): Map<string, Method> {
+        return isDeep
+            ? Method.deep(constructor)
+            : Method.shallow(constructor);
+    }
+    
+    private static shallow(constructor: Constructor): Map<string, Method> {
         if (!Method.m_shallow.has(constructor)) {
             const methods = Object.getOwnPropertyNames(constructor.prototype)
                 .reduce(
@@ -33,9 +39,9 @@ export default class Method {
         return Method.m_shallow.get(constructor) as Map<string, Method>;
     }
     
-    public static deep(constructor: Constructor): Map<string, Method> {
+    private static deep(constructor: Constructor): Map<string, Method> {
         if (!Method.m_deep.has(constructor)) {
-            const prototypes = Reflection.Prototypes(constructor);
+            const prototypes = Reflection.prototypes(constructor);
         
             const methods = Array.from(prototypes)
                 .reduce(

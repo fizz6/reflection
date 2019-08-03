@@ -1,9 +1,15 @@
-import { Constructor } from './Reflection';
+import Reflection, { Constructor } from './Reflection';
 import Field from './Field';
 import Method from './Method';
 import Property from './Property';
 
 export default class Type {
+    
+    private static m_values: Set<string> = new Set([ 'Null', 'Undefined', 'Boolean', 'Number', 'String', 'Symbol' ]);
+    
+    public static get values(): Set<string> {
+        return Type.m_values;
+    }
     
     private static m_cache: Map<Constructor, Type> = new Map();
     
@@ -22,7 +28,7 @@ export default class Type {
     
     public get methods(): Map<string, Method> {
         if (this.m_methods === undefined) {
-            this.m_methods = Method.deep(this.m_constructor);
+            this.m_methods = Method.of(this.m_constructor);
         }
         
         return this.m_methods;
@@ -32,7 +38,7 @@ export default class Type {
     
     public get properties(): Map<string, Property> {
         if (this.m_properties === undefined) {
-            this.m_properties = Property.deep(this.m_constructor);
+            this.m_properties = Property.of(this.m_constructor);
         }
         
         return this.m_properties;
@@ -42,10 +48,14 @@ export default class Type {
     
     public get fields(): Map<string, Field> {
         if (this.m_fields === undefined) {
-            this.m_fields = Field.deep(this.m_constructor);
+            this.m_fields = Field.of(this.m_constructor);
         }
         
         return this.m_fields;
+    }
+    
+    public get prototypes(): Set<Constructor> {
+        return Reflection.prototypes(this.m_constructor);
     }
     
     private constructor(constructor: Constructor) {
